@@ -1,17 +1,25 @@
-# FastAPI app — defines all API endpoints (/location, /weather, /advice)
+# FastAPI app — defines all API endpoints (/clubs, /weather, /advice)
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from pydantic import BaseModel
-from backend.location import get_locations
+from backend.location import fetch_danish_golf_clubs, DANISH_GOLF_CLUBS
 from backend.weather import get_forecast, TimeSlot
 from backend.llm import get_advice
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await fetch_danish_golf_clubs()
+    yield
 
 
-@app.get("/location")
-def location(q: str):
-    return get_locations(q)
+app = FastAPI(lifespan=lifespan)
+
+
+@app.get("/clubs")
+def clubs():
+    return DANISH_GOLF_CLUBS
 
 
 @app.get("/weather")

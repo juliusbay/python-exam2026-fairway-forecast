@@ -12,26 +12,30 @@ BACKEND = os.getenv("BACKEND_URL", "http://localhost:8000")
 st.title("Fairway Forecast")
 st.caption("Weather forecasts and AI advice for your golf round.")
 
-# --- Search bar ---
-query = st.text_input(
-    "Search for a golf course", placeholder="e.g. Augusta National Golf Club"
-)
-search = st.button("Search")
 
-if search and query:
-    res = httpx.get(f"{BACKEND}/location", params={"q": query})
-    if res.status_code != 200 or not res.json():
-        st.error("No results found. Try a different search.")
-        st.stop()
-    st.session_state["results"] = res.json()
-    st.session_state["selected"] = None
+# Fetches the club list from the backend once and caches it for the session
+@st.cache_data
+def load_clubs() -> list[dict]:
+    res = httpx.get(f"{BACKEND}/clubs")
+    res.raise_for_status()
+    return res.json()
 
-# --- Result list ---
-if st.session_state.get("results") and not st.session_state.get("selected"):
-    st.write("Select a location:")
-    for result in st.session_state["results"]:
-        if st.button(result["name"], key=result["name"]):
-            st.session_state["selected"] = result
+
+clubs = load_clubs()
+
+if not clubs:
+    st.error("No golf clubs loaded. Is the backend running?")
+    st.stop()
+
+# --- Dropdown ---
+club_names = [c["name"] for c in clubs]
+selected_name = st.selectbox("Select a Danish golf course", club_names)
+selected = next((c for c in clubs if c["name"] == selected_name), None)
+
+go = st.button("Get Forecast")
+
+if go and selected:
+    st.session_state["selected"] = selected
 
 # --- Dashboard ---
 if st.session_state.get("selected"):
