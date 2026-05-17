@@ -45,6 +45,9 @@ async def fetch_danish_golf_clubs() -> None:
         name: str | None = element.get("tags", {}).get("name")
         if not name:
             continue
+        country: str | None = element.get("tags", {}).get("addr:country")
+        if country and country != "DK":
+            continue
         center = element.get("center", {})
         lat = center.get("lat")
         lon = center.get("lon")
